@@ -136,7 +136,7 @@ module.exports = class Handler {
         const words = content.split(/ +/).map(x => x.toLowerCase());
         let result = [];
         for (const trigger of triggers.keys()) {
-          const idx = words.indexOf(trigger);
+          const idx = words.findIndex(w => w.includes(trigger));
           if (idx === -1) continue;
           const startIdx = Math.max(0, idx - 5);
           const endIdx = Math.min(words.length, idx + 5);
@@ -151,7 +151,16 @@ module.exports = class Handler {
         for (const value of result) {
           if (value - last !== 1) resultStr += "...";
           const word = words[value];
-          resultStr += " " + (triggers.has(word) ? word.toUpperCase() : word);
+
+          let shouldUpper = false;
+          for (const t of triggers.keys()) {
+            if (word.includes(t)) {
+              shouldUpper = true;
+              break;
+            }
+          }
+
+          resultStr += " " + (shouldUpper ? word.toUpperCase() : word);
           last = value;
         }
         if (last !== words.length - 1) resultStr += "...";
