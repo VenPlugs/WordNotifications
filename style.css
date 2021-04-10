@@ -1,0 +1,24 @@
+.venTriggersButton {
+  margin-left: auto;
+  margin-top: -77px;
+  width: 25%;
+}
+
+.venTriggersInput {
+  width: 70%;
+}
+
+.venTriggersSection {
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.venTriggersFormatGuide {
+  color: gray;
+  font-size: small;
+}
+
+.venTriggersFormatGuideTitle {
+  color: gray;
+  font-size: medium;
+}
