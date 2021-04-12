@@ -16,7 +16,6 @@
  */
 
 const { Plugin } = require("powercord/entities");
-const { inject, uninject } = require("powercord/injector");
 const { FluxDispatcher } = require("powercord/webpack");
 const Command = require("./command");
 const Settings = require("./Components/Settings");
