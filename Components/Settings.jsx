@@ -20,6 +20,7 @@ const { React, getModule } = require("powercord/webpack");
 const { TOAST_TIMEOUT, HEADER_FORMAT, BODY_FORMAT } = require("../constants");
 const Trigger = require("./Trigger");
 
+const { useState, useEffect } = React;
 const { getFlattenedGuilds } = getModule(["getFlattenedGuilds"], false);
 
 const guide = `
@@ -36,161 +37,126 @@ const guide = `
 {USER_TAG} 				- The full tag of the message author
 `;
 
-module.exports = class Settings extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      triggers: this.props.getSetting("triggers", []),
-      hideServersOpened: false,
-      ignoresOpened: false,
-      formatOpened: false,
-      triggersOpened: false
-    };
+module.exports = ({ getSetting, updateSetting }) => {
+  const [triggers, setTriggers] = useState(getSetting("triggers", []));
+  const [hideServersOpened, setHideServersOpened] = useState(false);
+  const [ignoresOpened, setIgnoresOpened] = useState(false);
+  const [formatOpened, setFormatOpened] = useState(false);
+  const [triggersOpened, setTriggersOpened] = useState(false);
+
+  useEffect(() => {
+    updateSetting("triggers", triggers);
+  }, [triggers]);
+
+  function removeTrigger(idx) {
+    const newTriggers = triggers.slice();
+    newTriggers.splice(idx, 1);
+    setTriggers(newTriggers);
   }
 
-  removeTrigger(idx) {
-    this.setState(({ triggers }) => {
-      triggers.splice(idx, 1);
-      return { triggers };
-    });
+  function addTrigger(str) {
+    setTriggers([...triggers, str]);
   }
 
-  addTrigger(str) {
-    this.setState(({ triggers }) => {
-      triggers.push(str);
-      return { triggers };
-    });
+  function setTrigger(i, str) {
+    const newTriggers = triggers.slice();
+    newTriggers[i] = str;
+    setTrigger(newTriggers);
   }
 
-  setTrigger(i, str) {
-    if (i === -1) return this.appendTrigger(str);
-
-    this.setState(({ triggers }) => {
-      triggers[i] = str;
-      return { triggers };
-    });
-  }
-
-  validateIds(str) {
-    return /\d{17,19}[, ]*/.test(str);
-  }
-
-  onGuildToggle({ id }) {
-    const mutedGuilds = this.props.getSetting("mutedGuilds", []);
+  function onGuildToggle({ id }) {
+    const mutedGuilds = getSetting("mutedGuilds", []);
 
     if (!mutedGuilds.includes(id)) {
-      this.props.updateSetting("mutedGuilds", [...mutedGuilds, id]);
+      updateSetting("mutedGuilds", [...mutedGuilds, id]);
     } else {
-      this.props.updateSetting(
+      updateSetting(
         "mutedGuilds",
         mutedGuilds.filter(g => g !== id)
       );
     }
   }
 
-  render() {
-    const { getSetting, updateSetting } = this.props;
-    return (
-      <div>
-        <Category
-          name="Triggers"
-          description="Here you can manage your triggers"
-          opened={this.state.triggersOpened}
-          onChange={() => this.setState(prev => ({ triggersOpened: !prev.triggersOpened }))}
+  return (
+    <div>
+      <Category name="Triggers" description="Here you can manage your triggers" opened={triggersOpened} onChange={() => setTriggersOpened(!triggersOpened)}>
+        {triggers.map((t, i) => (
+          <Trigger key={t} value={t} pos={i} setTrigger={setTrigger} removeTrigger={removeTrigger} triggers={triggers} />
+        ))}
+
+        <Trigger pos={-1} value="" addTrigger={addTrigger} triggers={triggers} />
+      </Category>
+
+      <Category
+        name="Toast Format"
+        description="Here you can customise the toast that is shown if a trigger is detected"
+        opened={formatOpened}
+        onChange={() => setFormatOpened(!formatOpened)}
+      >
+        <SliderInput
+          stickToMarkers
+          required
+          className="venTriggersToastTimeout"
+          minValue={1}
+          maxValue={10}
+          defaultValue={TOAST_TIMEOUT}
+          initialValue={getSetting("toastTimeout", TOAST_TIMEOUT)}
+          markers={[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 10]}
+          onValueChange={v => updateSetting("toastTimeout", v)}
         >
-          {this.state.triggers.map((t, i) => (
-            <Trigger
-              key={t}
-              value={t}
-              pos={i}
-              setTrigger={this.setTrigger.bind(this)}
-              removeTrigger={this.removeTrigger.bind(this)}
-              triggers={this.state.triggers}
-            />
+          The toast timeout, in seconds
+        </SliderInput>
+        <TextInput value={getSetting("headerFormat", HEADER_FORMAT)} onChange={v => updateSetting("headerFormat", v)}>
+          The toast header format
+        </TextInput>
+        <TextInput value={getSetting("bodyFormat", BODY_FORMAT)} onChange={v => updateSetting("bodyFormat", v)}>
+          The toast body format
+        </TextInput>
+
+        <p className="venTriggersFormatGuideTitle">The following variables can be used in the above two formats and will be replaced accordingly:</p>
+        <p className="venTriggersFormatGuide">
+          {guide.split("\n").map((line, idx) => (
+            <p key={idx}>{line}</p>
           ))}
+        </p>
+      </Category>
 
-          <Trigger pos={-1} value="" addTrigger={this.addTrigger.bind(this)} triggers={this.state.triggers} />
-        </Category>
+      <Category
+        name="Overrides and Ignores"
+        description="Specify overrides and ignores"
+        opened={ignoresOpened}
+        onChange={() => setIgnoresOpened(!ignoresOpened)}
+      >
+        <SwitchItem note="Whether own messages should be ignored" value={getSetting("ignoreSelf", true)} onChange={v => updateSetting("ignoreSelf", v)}>
+          Ignore self. Highly recommended
+        </SwitchItem>
+        <SwitchItem note="Whether all muted servers should be ignored" value={getSetting("ignoreMuted", true)} onChange={v => updateSetting("ignoreMuted", v)}>
+          Ignore all muted servers
+        </SwitchItem>
 
-        <Category
-          name="Toast Format"
-          description="Here you can customise the toast that is shown if a trigger is detected"
-          opened={this.state.formatOpened}
-          onChange={() => this.setState(prev => ({ formatOpened: !prev.formatOpened }))}
+        <SwitchItem
+          note="Whether all friends should always alert you regardless of your server mutes"
+          value={getSetting("whitelistFriends", true)}
+          onChange={v => updateSetting("whitelistFriends", v)}
         >
-          <SliderInput
-            stickToMarkers
-            required
-            className="venTriggersToastTimeout"
-            minValue={1}
-            maxValue={10}
-            defaultValue={TOAST_TIMEOUT}
-            initialValue={getSetting("toastTimeout", TOAST_TIMEOUT)}
-            markers={[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 10]}
-            onValueChange={v => updateSetting("toastTimeout", v)}
-          >
-            The toast timeout, in seconds
-          </SliderInput>
-          <TextInput value={getSetting("headerFormat", HEADER_FORMAT)} onChange={v => updateSetting("headerFormat", v)}>
-            The toast header format
-          </TextInput>
-          <TextInput value={getSetting("bodyFormat", BODY_FORMAT)} onChange={v => updateSetting("bodyFormat", v)}>
-            The toast body format
-          </TextInput>
+          Whitelist all friends
+        </SwitchItem>
+      </Category>
 
-          <p className="venTriggersFormatGuideTitle">The following variables can be used in the above two formats and will be replaced accordingly:</p>
-          <p className="venTriggersFormatGuide">
-            {guide.split("\n").map((line, idx) => (
-              <p key={idx}>{line}</p>
-            ))}
-          </p>
-        </Category>
-
+      {!getSetting("ignoreMuted", true) && (
         <Category
-          name="Overrides and Ignores"
-          description="Specify overrides and ignores"
-          opened={this.state.ignoresOpened}
-          onChange={() => this.setState(prev => ({ ignoresOpened: !prev.ignoresOpened }))}
+          name="Ignore specific Servers"
+          description="Ignore messages from specific servers. They won't alert you any more"
+          opened={hideServersOpened}
+          onChange={() => setHideServersOpened(!hideServersOpened)}
         >
-          <SwitchItem
-            note="Whether own messages should be ignored"
-            value={this.props.getSetting("ignoreSelf", true)}
-            onChange={v => this.props.updateSetting("ignoreSelf", v)}
-          >
-            Ignore self. Highly recommended
-          </SwitchItem>
-          <SwitchItem
-            note="Whether all muted servers should be ignored"
-            value={this.props.getSetting("ignoreMuted", true)}
-            onChange={v => this.props.updateSetting("ignoreMuted", v)}
-          >
-            Ignore all muted servers
-          </SwitchItem>
-
-          <SwitchItem
-            note="Whether all friends should always alert you regardless of your server mutes"
-            value={this.props.getSetting("whitelistFriends", true)}
-            onChange={v => this.props.updateSetting("whitelistFriends", v)}
-          >
-            Whitelist all friends
-          </SwitchItem>
+          {getFlattenedGuilds().map(g => (
+            <SwitchItem key={g.id} value={getSetting("mutedGuilds", []).includes(g.id)} onChange={() => onGuildToggle(g)}>
+              Mute messages from {g.name}
+            </SwitchItem>
+          ))}
         </Category>
-
-        {!this.props.getSetting("ignoreMuted", true) && (
-          <Category
-            name="Ignore specific Servers"
-            description="Ignore messages from specific servers. They won't alert you any more"
-            opened={this.state.hideServersOpened}
-            onChange={() => this.setState(prev => ({ hideServersOpened: !prev.hideServersOpened }))}
-          >
-            {getFlattenedGuilds().map(g => (
-              <SwitchItem key={g.id} value={this.props.getSetting("mutedGuilds", []).includes(g.id)} onChange={() => this.onGuildToggle(g)}>
-                Mute messages from {g.name}
-              </SwitchItem>
-            ))}
-          </Category>
-        )}
-      </div>
-    );
-  }
+      )}
+    </div>
+  );
 };
