@@ -15,11 +15,12 @@
  * along with WordNotifications.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-const { getModule, _getModules } = require("powercord/webpack");
+const { getModule } = require("powercord/webpack");
 const { TOAST_TIMEOUT, HEADER_FORMAT, BODY_FORMAT } = require("./constants");
 
 const { transitionTo } = getModule(["transitionTo"], false);
 const { getChannel } = getModule(["getChannel"], false);
+const { getGuild } = getModule(["getGuild"], false);
 const { getCurrentUser } = getModule(["getCurrentUser"], false);
 
 module.exports = class Handler {
@@ -95,7 +96,7 @@ module.exports = class Handler {
       const cached = this.cache.get(id);
       if (cached) {
         if (cached.content === content) return;
-        if (matches.keys().every(trigger => cached.matches.has(trigger))) return;
+        if (Array.from(matches.keys()).every(trigger => cached.matches.has(trigger))) return;
       }
     } else if (this.cache.has(id)) return;
 
@@ -135,7 +136,7 @@ module.exports = class Handler {
     });
   }
 
-  format(str, triggers, { content, guild, author: { username, discriminator, id: authorId }, guild_id, channel_id }) {
+  format(str, triggers, { mentions, mention_roles, content, guild, author: { username, discriminator, id: authorId }, guild_id, channel_id }) {
     const replacements = {
       CONTENT: content,
       TRIGGERS: Array.from(triggers.values()).join(", "),
@@ -182,7 +183,24 @@ module.exports = class Handler {
         }
         if (last !== words.length - 1) resultStr += "...";
 
-        return resultStr;
+        if (mentions) {
+          for (const mention of mentions) {
+            resultStr = resultStr.replace(new RegExp(`<@!?${mention.id}>`, "g"), `@${mention.username}#${mention.discriminator}`);
+          }
+        }
+
+        if (mention_roles && guild_id) {
+          if (!guild) guild = getGuild(guild_id);
+          for (const roleId of mention_roles) {
+            const role = guild.roles[roleId];
+            resultStr = resultStr.replace(new RegExp(`<@&${roleId}>`, "g"), `@${role ? role.name : "invalid-role"}`);
+          }
+        }
+
+        return resultStr.replace(/<a?(:\w{2,32}:)\d{17,19}>/g, "$1").replace(/<#(\d{17,19})>/, m => {
+          const channel = getChannel(m.replace(/\D/g, ""));
+          return `#${channel ? channel.name : "deleted-channel"}`;
+        });
       }
     };
 
