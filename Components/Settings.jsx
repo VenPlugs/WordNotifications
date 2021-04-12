@@ -24,17 +24,17 @@ const { useState, useEffect } = React;
 const { getFlattenedGuilds } = getModule(["getFlattenedGuilds"], false);
 
 const guide = `
-{CONTENT} 				- The message content
-{TRIGGERS}  			- A comma separated list of triggers found in the message
-{TRIGGER_CONTEXT} 		- All triggers with the preceding and proceeding 5 words, delimited by three periods
-{TRIGGER_COUNT} 		- Amount of triggers found in the message
-{GUILD_ID} 				- The id of the server the message came from, or the id of the author if it was a private message
-{GUILD_NAME}			- The name of the server the message came from, or the name of the author if it was a private message
-{CHANNEL_ID} 			- The id of the channel the message came from
-{CHANNEL_NAME}			- The name of the channel the message came from
-{USER_ID} 				- The id of the message author
-{USER_NAME} 			- The name of the message author
-{USER_TAG} 				- The full tag of the message author
+{CONTENT}         - The message content
+{TRIGGERS}        - A comma separated list of triggers found in the message
+{TRIGGER_CONTEXT} - All triggers with the preceding and proceeding 5 words, delimited by three periods
+{TRIGGER_COUNT}   - Amount of triggers found in the message
+{GUILD_ID}        - The id of the server the message came from, or the id of the author if it was a private message
+{GUILD_NAME}      - The name of the server the message came from, or the name of the author if it was a private message
+{CHANNEL_ID}      - The id of the channel the message came from
+{CHANNEL_NAME}    - The name of the channel the message came from
+{USER_ID}         - The id of the message author
+{USER_NAME}       - The name of the message author
+{USER_TAG}        - The full tag of the message author
 `;
 
 module.exports = ({ getSetting, updateSetting }) => {
