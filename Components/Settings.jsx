@@ -61,7 +61,7 @@ module.exports = ({ getSetting, updateSetting }) => {
   function setTrigger(i, str) {
     const newTriggers = triggers.slice();
     newTriggers[i] = str;
-    setTrigger(newTriggers);
+    setTriggers(newTriggers);
   }
 
   function onGuildToggle({ id }) {
