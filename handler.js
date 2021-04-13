@@ -58,38 +58,42 @@ module.exports = class Handler {
   }
 
   onDispatch(event) {
-    if (!this.triggers.length) return;
-    if (!event || !(event.type === "MESSAGE_CREATE" || event.type === "MESSAGE_UPDATE")) return;
+    try {
+      if (!this.triggers.length) return;
+      if (!event || !(event.type === "MESSAGE_CREATE" || event.type === "MESSAGE_UPDATE")) return;
 
-    const { message } = event;
-    if (!message || !message.author || message.author.bot || !message.content || message.state === "SENDING") return;
+      const { message } = event;
+      if (!message || !message.author || message.author.bot || !message.content || message.state === "SENDING") return;
 
-    let { id, content, edited_timestamp, guild_id, channel_id } = message;
+      let { id, content, edited_timestamp, guild_id, channel_id } = message;
 
-    let matches = this.findTriggers(content);
-    if (!matches.size) return;
+      let matches = this.findTriggers(content);
+      if (!matches.size) return;
 
-    // For some reason guild messages sometimes just don't include the guild_id
-    if (!guild_id) guild_id = getChannel(channel_id).guild_id;
+      // For some reason guild messages sometimes just don't include the guild_id
+      if (!guild_id) guild_id = getChannel(channel_id).guild_id;
 
-    const isSelf = getCurrentUser().id === message.author.id;
+      const isSelf = getCurrentUser().id === message.author.id;
 
-    if (!this.settings.get("whitelistFriends", true) || !(isSelf || Object.prototype.hasOwnProperty.call(getRelationships(), message.author.id))) {
-      if (isSelf && this.settings.get("ignoreSelf", true)) return;
-      if (guild_id && this.settings.get("ignoreMuted", true) && (muteStore.isMuted(guild_id) || muteStore.isChannelMuted(guild_id, channel_id))) return;
-      if (guild_id && this.settings.get("mutedGuilds", []).includes(guild_id)) return;
-    }
-
-    if (edited_timestamp) {
-      const cached = this.cache.get(id);
-      if (cached) {
-        if (cached.content === content) return;
-        if (Array.from(matches.keys()).every(trigger => cached.matches.has(trigger))) return;
+      if (!this.settings.get("whitelistFriends", true) || !(isSelf || Object.prototype.hasOwnProperty.call(getRelationships(), message.author.id))) {
+        if (isSelf && this.settings.get("ignoreSelf", true)) return;
+        if (guild_id && this.settings.get("ignoreMuted", true) && (muteStore.isMuted(guild_id) || muteStore.isChannelMuted(guild_id, channel_id))) return;
+        if (guild_id && this.settings.get("mutedGuilds", []).includes(guild_id)) return;
       }
-    } else if (this.cache.has(id)) return;
 
-    this.cache.set(id, { matches, content });
-    this.sendToast(matches, message);
+      if (edited_timestamp) {
+        const cached = this.cache.get(id);
+        if (cached) {
+          if (cached.content === content) return;
+          if (Array.from(matches.keys()).every(trigger => cached.matches.has(trigger))) return;
+        }
+      } else if (this.cache.has(id)) return;
+
+      this.cache.set(id, { matches, content });
+      this.sendToast(matches, message);
+    } catch (error) {
+      this.error(`Something went wrong while handling message event`, error);
+    }
   }
 
   findTriggers(str) {
