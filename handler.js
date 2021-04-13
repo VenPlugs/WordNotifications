@@ -28,9 +28,10 @@ const { showNotification } = getModule(["showNotification"], false);
 const muteStore = getModule(["isChannelMuted"], false);
 
 module.exports = class Handler {
-  constructor({ settings }) {
+  constructor(cmd) {
     this.cache = new Map();
-    this.settings = settings;
+    this.error = cmd.error.bind(cmd);
+    this.settings = cmd.settings;
     this.deleteToast = this.deleteToast.bind(this);
   }
 
@@ -171,28 +172,33 @@ module.exports = class Handler {
       }
     };
 
-    let formatted = str.replace(/\{(\w+)\}/g, match => {
-      const key = match.slice(1, -1).toUpperCase();
-      return Object.prototype.hasOwnProperty.call(replacements, key) ? replacements[key] : match;
-    });
+    try {
+      let formatted = str.replace(/\{(\w+)\}/g, match => {
+        const key = match.slice(1, -1).toUpperCase();
+        return Object.prototype.hasOwnProperty.call(replacements, key) ? replacements[key] : match;
+      });
 
-    if (mentions) {
-      for (const mention of mentions) {
-        formatted = formatted.replace(new RegExp(`<@!?${mention.id}>`, "g"), `@${mention.username}#${mention.discriminator}`);
+      if (mentions) {
+        for (const mention of mentions) {
+          formatted = formatted.replace(new RegExp(`<@!?${mention.id}>`, "g"), `@${mention.username}#${mention.discriminator}`);
+        }
       }
-    }
 
-    if (mention_roles && guild_id) {
-      if (!guild) guild = getGuild(guild_id);
-      for (const roleId of mention_roles) {
-        const role = guild.roles[roleId];
-        formatted = formatted.replace(new RegExp(`<@&${roleId}>`, "g"), `@${role ? role.name : "invalid-role"}`);
+      if (mention_roles && guild_id) {
+        if (!guild) guild = getGuild(guild_id);
+        for (const roleId of mention_roles) {
+          const role = guild.roles[roleId];
+          formatted = formatted.replace(new RegExp(`<@&${roleId}>`, "g"), `@${role ? role.name : "invalid-role"}`);
+        }
       }
-    }
 
-    return formatted.replace(/<a?(:\w{2,32}:)\d{17,19}>/g, "$1").replace(/<#(\d{17,19})>/, m => {
-      const channel = getChannel(m.replace(/\D/g, ""));
-      return `#${channel ? channel.name : "deleted-channel"}`;
-    });
+      return formatted.replace(/<a?(:\w{2,32}:)\d{17,19}>/g, "$1").replace(/<#(\d{17,19})>/, m => {
+        const channel = getChannel(m.replace(/\D/g, ""));
+        return `#${channel ? channel.name : "deleted-channel"}`;
+      });
+    } catch (error) {
+      this.error(error);
+      return "Something went wrong while formatting the output. Check the console";
+    }
   }
 };
