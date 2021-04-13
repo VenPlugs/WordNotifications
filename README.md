@@ -8,7 +8,7 @@ Toasts can be customised by using format strings with placeholders
 
 - Get notified whenever people say any of your configured words
 - Manage trigger words via settings tab or command
-- Regex support
+- Full Regex support
 - Choose between Powercord Toasts or Desktop Notifications
 - Fully customisable via format strings with placeholders
 - Optionally ignore muted servers or channels with option to whitelist friends

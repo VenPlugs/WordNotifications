@@ -18,6 +18,7 @@
 const { Button, Card } = require("powercord/components");
 const { TextInput } = require("powercord/components/settings");
 const { React } = require("powercord/webpack");
+const { isTriggerValid, existsTriggerAlready } = require("../util");
 
 module.exports = ({ removeTrigger, addTrigger, setTrigger, triggers, triggerType, value: originalValue, pos }) => {
   const [value, setValue] = React.useState(originalValue);
@@ -30,19 +31,7 @@ module.exports = ({ removeTrigger, addTrigger, setTrigger, triggers, triggerType
   }
 
   function isValid() {
-    if (existsAlready()) return false;
-    if (triggerType === "plain") return true;
-    try {
-      if (new RegExp(`(^|[^A-Z0-9]+)${value}([^A-Z0-9]+|$)`, "gi").test("jisjkaskjkjsjkaskajksjajkoskjoasjkjkasjksjkaskjakjjks")) return false;
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  function existsAlready() {
-    const idx = triggers.indexOf(value);
-    return idx !== -1 && (idx !== pos || triggers.lastIndexOf(value) !== pos);
+    return isTriggerValid(value, pos, triggerType, triggers);
   }
 
   function onBlur() {
@@ -66,7 +55,15 @@ module.exports = ({ removeTrigger, addTrigger, setTrigger, triggers, triggerType
           onClick={add}
           color={isValid() ? (value ? Button.Colors.GREEN : Button.Colors.BRAND) : Button.Colors.GREY}
         >
-          {isValid() ? (value ? "Save" : "Add New") : existsAlready() ? "Already exists" : triggerType === "regex" ? "Invalid regex" : "Invalid trigger"}
+          {isValid()
+            ? value
+              ? "Save"
+              : "Add New"
+            : existsTriggerAlready(value, pos, triggers)
+            ? "Already exists"
+            : triggerType === "regex"
+            ? "Invalid regex"
+            : "Invalid trigger"}
         </Button>
       ) : (
         <Button className="venTriggersButton" size={Button.Sizes.SMALL} onClick={() => removeTrigger(pos)} color={Button.Colors.RED}>

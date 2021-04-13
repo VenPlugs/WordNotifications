@@ -1,3 +1,20 @@
+function existsTriggerAlready(trigger, pos, triggers) {
+  const idx = triggers.indexOf(trigger);
+  return idx !== -1 && (idx !== pos || triggers.lastIndexOf(trigger) !== pos);
+}
+
+function isTriggerValid(trigger, pos, type, triggers) {
+  if (existsTriggerAlready(trigger, pos, triggers)) return false;
+  if (type === "plain") return true;
+
+  try {
+    if (new RegExp(`(^|[^A-Z0-9]+)${trigger}([^A-Z0-9]+|$)`, "gi").test("jisjkaskjkjsjkaskajksjajkoskjoasjkjkasjksjkaskjakjjks")) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function getAllIndexes(arr, val) {
   const indexes = [];
   for (let i = 0; i < arr.length; i++) {
@@ -28,5 +45,7 @@ module.exports = {
   range,
   uniqueSorted,
   getAvatarUrl,
-  getMessageLink
+  getMessageLink,
+  isTriggerValid,
+  existsTriggerAlready
 };

@@ -15,6 +15,8 @@
  * along with WordNotifications.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+const { isTriggerValid } = require("./util");
+
 const commands = {
   list: "List all triggers",
   add: "Add one or more triggers",
@@ -43,13 +45,10 @@ module.exports = class Command {
     return this.settings.get("triggers", []);
   }
 
-  formatTriggers(triggers) {
-    return triggers.map(t => `\`${t}\``).join(", ");
-  }
-
   executor(input) {
     const [command, ...args] = input.map(x => x.toLowerCase());
     const { triggers } = this;
+    let response = "```diff\n";
     switch (command) {
       case "clear":
         this.settings.set("triggers", []);
@@ -63,17 +62,21 @@ module.exports = class Command {
             result: "You didn't specify any triggers to add"
           };
 
+        let skipped = 0;
         const added = [];
         for (const arg of args) {
-          if (triggers.includes(arg)) continue;
+          if (!isTriggerValid(arg, -1, this.settings.get("triggerType", "plain"), triggers)) {
+            skipped++;
+            continue;
+          }
           triggers.push(arg);
           added.push(arg);
         }
 
         return {
           result: added.length
-            ? `Successfully added ${this.formatTriggers(added)}\n\nAll triggers: ${this.formatTriggers(triggers)}`
-            : "All specified triggers already exist"
+            ? response + `+>> Successfully added ${added.length} triggers:\n\t${added.join(", ")}\n\n>> All triggers:\n\t${triggers.join(", ")}\`\`\``
+            : "Skipped all triggers as they were invalid or already existed"
         };
 
       case "remove":
@@ -90,15 +93,16 @@ module.exports = class Command {
         }
 
         return {
-          result: added.length
-            ? `Successfully removed ${this.formatTriggers(removed)}\n\nRemaining triggers: ${this.formatTriggers(triggers) || "None"}`
+          result: removed.length
+            ? response +
+              `->> Successfully removed ${removed.length} triggers:\n\t${removed.join(", ")}\n\n>> Remaining triggers: \n\t${triggers.join(", ") || "-"}\`\`\``
             : "None of the specified triggers exist"
         };
 
       case "list":
       case undefined:
         return {
-          result: triggers.length ? this.formatTriggers(triggers) : "You don't have any triggers"
+          result: triggers.length ? "```\n>> List of triggers\n\t" + triggers.join(", ") + "```" : "You don't have any triggers"
         };
 
       default:
@@ -118,10 +122,10 @@ module.exports = class Command {
               commands: [{ command: "You don't have any triggers to remove", instruction: true }]
             };
 
-          args = args.slice(1).map(x => x.toLowerCase());
+          const txt = args.slice(1).map(x => x.toLowerCase());
           return {
             header: "Please specify which triggers you would like to remove",
-            commands: triggers.filter(t => !args.includes(triggers)).map(t => ({ command: t }))
+            commands: triggers.filter(t => t.toLowerCase().includes(txt)).map(t => ({ command: t }))
           };
 
         default:
