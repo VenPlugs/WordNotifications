@@ -22,6 +22,7 @@ const { transitionTo } = getModule(["transitionTo"], false);
 const { getChannel } = getModule(["getChannel"], false);
 const { getGuild } = getModule(["getGuild"], false);
 const { getCurrentUser } = getModule(["getCurrentUser"], false);
+const { getRelationships } = getModule(["getRelationships"], false);
 
 module.exports = class Handler {
   constructor({ settings }) {
@@ -62,6 +63,10 @@ module.exports = class Handler {
     return this.settings.get("mutedGuilds", []);
   }
 
+  get whitelistFriends() {
+    return this.settings.get("whitelistFriends", true);
+  }
+
   queueToast(id, data) {
     if (typeof this.toast === "undefined") {
       this.toast = true;
@@ -88,9 +93,15 @@ module.exports = class Handler {
     let matches = this.findTriggers(content);
     if (!matches.size) return;
 
-    if (this.ignoreSelf && getCurrentUser().id === message.author.id) return;
+    const isSelf = getCurrentUser().id === message.author.id;
+    if (isSelf && this.ignoreSelf) return;
     if (!guild_id) guild_id = getChannel(channel_id).guild_id;
-    if (guild_id && this.mutedGuilds.includes(guild_id)) return;
+    if (
+      guild_id &&
+      this.mutedGuilds.includes(guild_id) &&
+      !(this.whitelistFriends && (isSelf || Object.prototype.hasOwnProperty.call(getRelationships(), message.author.id)))
+    )
+      return;
 
     if (edited_timestamp) {
       const cached = this.cache.get(id);
