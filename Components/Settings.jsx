@@ -23,6 +23,20 @@ const Trigger = require("./Trigger");
 const { useState, useEffect } = React;
 const { getFlattenedGuilds } = getModule(["getFlattenedGuilds"], false);
 
+const placeHolders = [
+  "CONTENT",
+  "TRIGGERS",
+  "TRIGGER_CONTEXT",
+  "TRIGGER_COUNT",
+  "GUILD_ID",
+  "GUILD_NAME",
+  "CHANNEL_ID",
+  "CHANNEL_NAME",
+  "USER_ID",
+  "USER_NAME",
+  "USER_TAG"
+];
+
 const guide = `
 {CONTENT}         - The message content
 {TRIGGERS}        - A comma separated list of triggers found in the message
@@ -43,6 +57,7 @@ module.exports = ({ getSetting, updateSetting }) => {
   const [ignoresOpened, setIgnoresOpened] = useState(false);
   const [formatOpened, setFormatOpened] = useState(false);
   const [triggersOpened, setTriggersOpened] = useState(false);
+  const [guildSearch, setGuildSearch] = useState("");
 
   useEffect(() => {
     updateSetting("triggers", triggers);
@@ -77,6 +92,15 @@ module.exports = ({ getSetting, updateSetting }) => {
     }
   }
 
+  function isFormatValid(format) {
+    const re = /\{(\w*)\}/g;
+    let match;
+    while ((match = re.exec(format))) {
+      if (!placeHolders.includes(match[1])) return false;
+    }
+    return true;
+  }
+
   return (
     <div>
       <Category name="Triggers" description="Here you can manage your triggers" opened={triggersOpened} onChange={() => setTriggersOpened(!triggersOpened)}>
@@ -89,7 +113,7 @@ module.exports = ({ getSetting, updateSetting }) => {
 
       <RadioGroup
         onChange={e => updateSetting("notificationType", e.value)}
-        value={getSetting("notificationType", "toast")}
+        value={getSetting("notificationType", "toasts")}
         options={[
           {
             name: "Toasts",
@@ -107,29 +131,52 @@ module.exports = ({ getSetting, updateSetting }) => {
       </RadioGroup>
 
       <Category
-        name="Toast Format"
-        description="Here you can customise the toast that is shown if a trigger is detected"
+        name="Notification Format"
+        description="Here you can customise the notification that is shown if a trigger is detected"
         opened={formatOpened}
         onChange={() => setFormatOpened(!formatOpened)}
       >
-        <SliderInput
-          stickToMarkers
-          required
-          className="venTriggersToastTimeout"
-          minValue={1}
-          maxValue={10}
-          defaultValue={TOAST_TIMEOUT}
-          initialValue={getSetting("toastTimeout", TOAST_TIMEOUT)}
-          markers={[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 10]}
-          onValueChange={v => updateSetting("toastTimeout", v)}
+        {getSetting("notificationType", "toasts") === "toasts" && (
+          <SliderInput
+            stickToMarkers
+            required
+            className="venTriggersToastTimeout"
+            minValue={1}
+            maxValue={10}
+            defaultValue={TOAST_TIMEOUT}
+            initialValue={getSetting("toastTimeout", TOAST_TIMEOUT)}
+            markers={[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 10]}
+            onValueChange={v => updateSetting("toastTimeout", v)}
+          >
+            The toast timeout, in seconds
+          </SliderInput>
+        )}
+
+        <TextInput
+          value={getSetting("headerFormat", HEADER_FORMAT)}
+          onChange={v => updateSetting("headerFormat", v)}
+          onBlur={() =>
+            updateSetting(
+              "headerFormat",
+              getSetting("headerFormat", HEADER_FORMAT).replace(/\{\w+\}/g, m => m.toUpperCase())
+            )
+          }
+          style={isFormatValid(getSetting("headerFormat", HEADER_FORMAT)) ? {} : { borderColor: "#e53935" }}
         >
-          The toast timeout, in seconds
-        </SliderInput>
-        <TextInput value={getSetting("headerFormat", HEADER_FORMAT)} onChange={v => updateSetting("headerFormat", v)}>
-          The toast header format
+          The notification header format
         </TextInput>
-        <TextInput value={getSetting("bodyFormat", BODY_FORMAT)} onChange={v => updateSetting("bodyFormat", v)}>
-          The toast body format
+        <TextInput
+          value={getSetting("bodyFormat", BODY_FORMAT)}
+          onChange={v => updateSetting("bodyFormat", v)}
+          onBlur={() =>
+            updateSetting(
+              "headerFormat",
+              getSetting("headerFormat", HEADER_FORMAT).replace(/\{\w+\}/g, m => m.toUpperCase())
+            )
+          }
+          style={isFormatValid(getSetting("bodyFormat", BODY_FORMAT)) ? {} : { borderColor: "#e53935" }}
+        >
+          The notification body format
         </TextInput>
 
         <p className="venTriggersFormatGuideTitle">The following variables can be used in the above two formats and will be replaced accordingly:</p>
@@ -172,11 +219,15 @@ module.exports = ({ getSetting, updateSetting }) => {
         opened={hideServersOpened}
         onChange={() => setHideServersOpened(!hideServersOpened)}
       >
-        {getFlattenedGuilds().map(g => (
-          <SwitchItem key={g.id} value={getSetting("mutedGuilds", []).includes(g.id)} onChange={() => onGuildToggle(g)}>
-            Mute messages from {g.name}
-          </SwitchItem>
-        ))}
+        <TextInput value={guildSearch} placeholder="What are you looking for?" onChange={setGuildSearch}></TextInput>
+
+        {getFlattenedGuilds()
+          .filter(g => g.name.toLowerCase().includes(guildSearch.toLowerCase()))
+          .map(g => (
+            <SwitchItem key={g.id} value={getSetting("mutedGuilds", []).includes(g.id)} onChange={() => onGuildToggle(g)}>
+              Mute messages from {g.name}
+            </SwitchItem>
+          ))}
       </Category>
     </div>
   );
