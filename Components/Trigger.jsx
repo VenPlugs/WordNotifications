@@ -66,7 +66,7 @@ module.exports = ({ removeTrigger, addTrigger, setTrigger, triggers, triggerType
           onClick={add}
           color={isValid() ? (value ? Button.Colors.GREEN : Button.Colors.BRAND) : Button.Colors.GREY}
         >
-          {isValid() ? (value ? "Save" : "Add New") : existsAlready() ? "Already exists" : "Invalid trigger"}
+          {isValid() ? (value ? "Save" : "Add New") : existsAlready() ? "Already exists" : triggerType === "regex" ? "Invalid regex" : "Invalid trigger"}
         </Button>
       ) : (
         <Button className="venTriggersButton" size={Button.Sizes.SMALL} onClick={() => removeTrigger(pos)} color={Button.Colors.RED}>

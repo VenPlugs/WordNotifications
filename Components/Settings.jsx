@@ -130,31 +130,31 @@ module.exports = ({ getSetting, updateSetting }) => {
         <Trigger pos={-1} value="" addTrigger={addTrigger} triggers={triggers} triggerType={triggerType} />
       </Category>
 
-      <RadioGroup
-        onChange={e => updateSetting("notificationType", e.value)}
-        value={getSetting("notificationType", "toasts")}
-        options={[
-          {
-            name: "Toasts",
-            desc: "Notifications are sent via Powercord Toasts",
-            value: "toasts"
-          },
-          {
-            name: "Desktop Notifications",
-            desc: "Notifications are sent via Desktop Notifications",
-            value: "notifications"
-          }
-        ]}
-      >
-        Notification type
-      </RadioGroup>
-
       <Category
         name="Notification Format"
         description="Here you can customise the notification that is shown if a trigger is detected"
         opened={formatOpened}
         onChange={() => setFormatOpened(!formatOpened)}
       >
+        <RadioGroup
+          onChange={e => updateSetting("notificationType", e.value)}
+          value={getSetting("notificationType", "toasts")}
+          options={[
+            {
+              name: "Toasts",
+              desc: "Notifications are sent via Powercord Toasts",
+              value: "toasts"
+            },
+            {
+              name: "Desktop Notifications",
+              desc: "Notifications are sent via Desktop Notifications",
+              value: "notifications"
+            }
+          ]}
+        >
+          Notification type
+        </RadioGroup>
+
         {getSetting("notificationType", "toasts") === "toasts" && (
           <SliderInput
             stickToMarkers
