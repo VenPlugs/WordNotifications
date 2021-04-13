@@ -9,11 +9,11 @@ Toasts can be customised by using format strings with placeholders
 - Get notified whenever people say any of your configured words
 - Manage trigger words via settings tab or command
 - Regex support
-<!-- - Notification history (is reset on restart, messages are removed from history on delete to preserve user privacy) -->
 - Choose between Powercord Toasts or Desktop Notifications
 - Fully customisable via format strings with placeholders
 - Optionally ignore muted servers or channels with option to whitelist friends
 - Option to ignore servers
+<!-- - Notification history (is reset on restart, messages are removed from history on delete to preserve user privacy) -->
 
 ## Screenshots
 
