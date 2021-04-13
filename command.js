@@ -15,13 +15,14 @@
  * along with WordNotifications.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+const { toOrdinal } = require("./util");
+
 const commands = {
   list: "List all triggers",
   add: "Add one or more triggers",
   remove: "Remove one or more triggers",
   clear: "Remove all triggers"
 };
-const ordinalSuffixes = ["th", "st", "nd", "rd", "th"];
 
 module.exports = class Command {
   constructor({ settings }) {
@@ -112,16 +113,6 @@ module.exports = class Command {
   autocomplete(args) {
     if (args.length > 1) {
       switch (args[0].toLowerCase()) {
-        case "add":
-          let i = args.length - 1;
-          const n = i % 100;
-          i += n < 21 ? (n < 4 ? ordinalSuffixes[n] : ordinalSuffixes[0]) : n % 10 > 4 ? ordinalSuffixes[0] : ordinalSuffixes[n % 10];
-
-          return {
-            header: "Adding triggers",
-            commands: [{ command: `Please specify the ${i} trigger you would like to add`, instruction: true }]
-          };
-
         case "remove":
           const { triggers } = this;
           if (!triggers.length)

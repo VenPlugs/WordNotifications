@@ -17,6 +17,7 @@
 
 const { getModule } = require("powercord/webpack");
 const { TOAST_TIMEOUT, HEADER_FORMAT, BODY_FORMAT } = require("./constants");
+const { getAvatarUrl, getAllIndexes, getMessageLink, range, uniqueSorted } = require("./util");
 
 const { transitionTo } = getModule(["transitionTo"], false);
 const { getChannel } = getModule(["getChannel"], false);
@@ -34,48 +35,12 @@ module.exports = class Handler {
   }
 
   get regex() {
-    const triggers = this.triggerType === "regex" ? this.triggers : this.triggers.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const triggers = this.settings.get("triggerType", "plain") === "regex" ? this.triggers : this.triggers.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
     return new RegExp(`(^|[^A-Z0-9]+)${triggers.join("|")}([^A-Z0-9]+|$)`, "gi");
-  }
-
-  get triggerType() {
-    return this.settings.get("triggerType", "plain");
-  }
-
-  get notificationType() {
-    return this.settings.get("notificationType", "toasts");
   }
 
   get triggers() {
     return this.settings.get("triggers", []);
-  }
-
-  get toastTimeout() {
-    return this.settings.get("toastTimeout", TOAST_TIMEOUT);
-  }
-
-  get headerFormat() {
-    return this.settings.get("headerFormat", HEADER_FORMAT);
-  }
-
-  get bodyFormat() {
-    return this.settings.get("bodyFormat", BODY_FORMAT);
-  }
-
-  get ignoreSelf() {
-    return this.settings.get("ignoreSelf", true);
-  }
-
-  get ignoreMuted() {
-    return this.settings.get("ignoreMuted", true);
-  }
-
-  get mutedGuilds() {
-    return this.settings.get("mutedGuilds", []);
-  }
-
-  get whitelistFriends() {
-    return this.settings.get("whitelistFriends", true);
   }
 
   queueToast(id, data) {
@@ -109,10 +74,10 @@ module.exports = class Handler {
 
     const isSelf = getCurrentUser().id === message.author.id;
 
-    if (!this.whitelistFriends || !(isSelf || Object.prototype.hasOwnProperty.call(getRelationships(), message.author.id))) {
-      if (isSelf && this.ignoreSelf) return;
-      if (guild_id && this.ignoreMuted && (muteStore.isMuted(guild_id) || muteStore.isChannelMuted(guild_id, channel_id))) return;
-      if (guild_id && this.mutedGuilds.includes(guild_id)) return;
+    if (!this.settings.get("whitelistFriends", true) || !(isSelf || Object.prototype.hasOwnProperty.call(getRelationships(), message.author.id))) {
+      if (isSelf && this.settings.get("ignoreSelf", true)) return;
+      if (guild_id && this.settings.get("ignoreMuted", true) && (muteStore.isMuted(guild_id) || muteStore.isChannelMuted(guild_id, channel_id))) return;
+      if (guild_id && this.settings.get("mutedGuilds", []).includes(guild_id)) return;
     }
 
     if (edited_timestamp) {
@@ -133,7 +98,7 @@ module.exports = class Handler {
     let match;
 
     while ((match = regex.exec(str))) {
-      const trigger = match[0].toLowerCase().replace(/[^a-z0-9]/g, "");
+      const trigger = match[0].toLowerCase().replace(/\W/g, "");
       if (!matches.has(trigger)) matches.set(trigger, match[0]);
     }
 
@@ -141,17 +106,17 @@ module.exports = class Handler {
   }
 
   sendToast(triggers, msg) {
-    const image = this.getAvatarUrl(msg.author.id, msg.author.avatar);
-    const header = this.format(this.headerFormat, triggers, msg);
-    const content = this.format(this.bodyFormat, triggers, msg);
-    const onClick = () => transitionTo(this.getMessageLink(msg.guild_id, msg.channel_id, msg.id));
-    if (this.notificationType === "toasts") {
+    const image = getAvatarUrl(msg.author.id, msg.author.avatar);
+    const header = this.format(this.settings.get("headerFormat", HEADER_FORMAT), triggers, msg);
+    const content = this.format(this.settings.get("bodyFormat", BODY_FORMAT), triggers, msg);
+    const onClick = () => transitionTo(getMessageLink(msg.guild_id, msg.channel_id, msg.id));
+    if (this.settings.get("notificationType", "toasts") === "toasts") {
       this.queueToast("ven-notifier", {
         header,
         content,
         image,
         type: "info",
-        timeout: this.toastTimeout * 1000,
+        timeout: this.settings.get("toastTimeout", TOAST_TIMEOUT) * 1000,
         buttons: [
           {
             text: "Jump",
@@ -182,71 +147,48 @@ module.exports = class Handler {
         return `${username}#${discriminator}`;
       },
       get TRIGGER_CONTEXT() {
-        const words = content.split(/ +/).map(x => x.toLowerCase());
-        let result = [];
-        for (const trigger of triggers.values()) {
-          const idx = words.findIndex(w => w.includes(trigger));
-          if (idx === -1) continue;
-          const startIdx = Math.max(0, idx - 5);
-          const endIdx = Math.min(words.length, idx + 5);
-          for (let i = startIdx; i < endIdx; i++) {
-            result.push(i);
-          }
+        let str = content;
+        const output = [];
+        for (const [stripped, original] of triggers.entries()) {
+          str = str.replace(new RegExp(`\s*${original}\s*`, "gi"), ` ${stripped} `);
         }
-        result = [...new Set(result)].sort((a, b) => a - b);
-        let resultStr = "";
+        const words = str.trim().split(/ +/);
+        const triggerIndexes = uniqueSorted(Array.from(triggers.keys()).flatMap(t => getAllIndexes(words, t)));
+        const allIndexes = uniqueSorted(triggerIndexes.flatMap(x => range(Math.max(0, x - 5), Math.min(words.length, x + 5))));
         let last = -1;
-
-        for (const value of result) {
-          if (value - last !== 1) resultStr += "...";
-          const word = words[value];
-
-          let shouldUpper = false;
-          for (const t of triggers.keys()) {
-            if (word.includes(t)) {
-              shouldUpper = true;
-              break;
-            }
-          }
-
-          resultStr += " " + (shouldUpper ? word.toUpperCase() : word);
-          last = value;
+        for (const idx of allIndexes) {
+          if (idx - last !== 1) output.push("...");
+          if (triggerIndexes.includes(idx)) output.push(triggers.get(words[idx]).toUpperCase());
+          else output.push(words[idx]);
+          last = idx;
         }
-        if (last !== words.length - 1) resultStr += "...";
-
-        if (mentions) {
-          for (const mention of mentions) {
-            resultStr = resultStr.replace(new RegExp(`<@!?${mention.id}>`, "g"), `@${mention.username}#${mention.discriminator}`);
-          }
-        }
-
-        if (mention_roles && guild_id) {
-          if (!guild) guild = getGuild(guild_id);
-          for (const roleId of mention_roles) {
-            const role = guild.roles[roleId];
-            resultStr = resultStr.replace(new RegExp(`<@&${roleId}>`, "g"), `@${role ? role.name : "invalid-role"}`);
-          }
-        }
-
-        return resultStr.replace(/<a?(:\w{2,32}:)\d{17,19}>/g, "$1").replace(/<#(\d{17,19})>/, m => {
-          const channel = getChannel(m.replace(/\D/g, ""));
-          return `#${channel ? channel.name : "deleted-channel"}`;
-        });
+        if (last !== words.length) output.push("...");
+        return output.join(" ");
       }
     };
 
-    return str.replace(/\{(\w+)\}/g, match => {
+    let formatted = str.replace(/\{(\w+)\}/g, match => {
       const key = match.slice(1, -1).toUpperCase();
       return Object.prototype.hasOwnProperty.call(replacements, key) ? replacements[key] : match;
     });
-  }
 
-  getAvatarUrl(id, hash, discriminator) {
-    const url = hash ? `avatars/${id}/${hash}.${hash.startsWith("_a") ? "gif" : "png"}` : `embed/avatars/${discriminator % 5}.png`;
-    return `https://cdn.discordapp.com/${url}`;
-  }
+    if (mentions) {
+      for (const mention of mentions) {
+        formatted = formatted.replace(new RegExp(`<@!?${mention.id}>`, "g"), `@${mention.username}#${mention.discriminator}`);
+      }
+    }
 
-  getMessageLink(guildId, channelId, messageId) {
-    return `/channels/${guildId || "@me"}/${channelId}/${messageId}`;
+    if (mention_roles && guild_id) {
+      if (!guild) guild = getGuild(guild_id);
+      for (const roleId of mention_roles) {
+        const role = guild.roles[roleId];
+        formatted = formatted.replace(new RegExp(`<@&${roleId}>`, "g"), `@${role ? role.name : "invalid-role"}`);
+      }
+    }
+
+    return formatted.replace(/<a?(:\w{2,32}:)\d{17,19}>/g, "$1").replace(/<#(\d{17,19})>/, m => {
+      const channel = getChannel(m.replace(/\D/g, ""));
+      return `#${channel ? channel.name : "deleted-channel"}`;
+    });
   }
 };
