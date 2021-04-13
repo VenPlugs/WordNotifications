@@ -130,12 +130,16 @@ module.exports = ({ getSetting, updateSetting }) => {
         <SwitchItem note="Whether own messages should be ignored" value={getSetting("ignoreSelf", true)} onChange={v => updateSetting("ignoreSelf", v)}>
           Ignore self. Highly recommended
         </SwitchItem>
-        <SwitchItem note="Whether all muted servers should be ignored" value={getSetting("ignoreMuted", true)} onChange={v => updateSetting("ignoreMuted", v)}>
-          Ignore all muted servers
+        <SwitchItem
+          note="Whether all muted servers and channels should be ignored"
+          value={getSetting("ignoreMuted", true)}
+          onChange={v => updateSetting("ignoreMuted", v)}
+        >
+          Ignore all muted servers and channels
         </SwitchItem>
 
         <SwitchItem
-          note="Whether all friends should always alert you regardless of your server mutes"
+          note="Whether friends should always alert you regardless of your mutes"
           value={getSetting("whitelistFriends", true)}
           onChange={v => updateSetting("whitelistFriends", v)}
         >
@@ -143,20 +147,18 @@ module.exports = ({ getSetting, updateSetting }) => {
         </SwitchItem>
       </Category>
 
-      {!getSetting("ignoreMuted", true) && (
-        <Category
-          name="Ignore specific Servers"
-          description="Ignore messages from specific servers. They won't alert you any more"
-          opened={hideServersOpened}
-          onChange={() => setHideServersOpened(!hideServersOpened)}
-        >
-          {getFlattenedGuilds().map(g => (
-            <SwitchItem key={g.id} value={getSetting("mutedGuilds", []).includes(g.id)} onChange={() => onGuildToggle(g)}>
-              Mute messages from {g.name}
-            </SwitchItem>
-          ))}
-        </Category>
-      )}
+      <Category
+        name="Ignore specific Servers"
+        description="Ignore messages from specific servers. They won't alert you any more"
+        opened={hideServersOpened}
+        onChange={() => setHideServersOpened(!hideServersOpened)}
+      >
+        {getFlattenedGuilds().map(g => (
+          <SwitchItem key={g.id} value={getSetting("mutedGuilds", []).includes(g.id)} onChange={() => onGuildToggle(g)}>
+            Mute messages from {g.name}
+          </SwitchItem>
+        ))}
+      </Category>
     </div>
   );
 };

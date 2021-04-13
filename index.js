@@ -1,4 +1,4 @@
-/* WordNotifications, a Powercord plugin that notifies you when someone says specific words
+/* This file is part of WordNotifications, a Powercord plugin that notifies you when someone says specific words
  * Copyright (C) 2021 Vendicated
  *
  * WordNotifications is free software: you can redistribute it and/or modify

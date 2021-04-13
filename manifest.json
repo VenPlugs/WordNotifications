@@ -1,7 +1,7 @@
 {
   "name": "Word Notifications",
   "version": "0.1.0",
-  "description": "Displays highly customisable Toasts every time someone sends a message including any of the configured trigger words",
+  "description": "Notifies you every time someone says specific words",
   "author": "Vendicated",
   "license": "GPL-3.0"
 }
