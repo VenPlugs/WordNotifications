@@ -29,6 +29,7 @@ module.exports = class WordNotifications extends Plugin {
     this.onDispatch = this.handler.onDispatch.bind(this.handler);
 
     this.loadStylesheet("style.css");
+
     powercord.api.settings.registerSettings("venWnSettings", {
       category: this.entityID,
       label: "Word Notifications",
@@ -36,6 +37,7 @@ module.exports = class WordNotifications extends Plugin {
     });
 
     // Default settings
+    this.settings.set("notificationType", this.settings.get("notificationType", "toasts"));
     this.settings.set("triggers", this.settings.get("triggers", []));
     this.settings.set("toastTimeout", this.settings.get("toastTimeout", TOAST_TIMEOUT));
     this.settings.set("headerFormat", this.settings.get("headerFormat", HEADER_FORMAT));
@@ -49,9 +51,9 @@ module.exports = class WordNotifications extends Plugin {
   }
 
   pluginWillUnload() {
+    this.command.unload();
     powercord.api.settings.unregisterSettings("venWnSettings");
     FluxDispatcher.unsubscribe("MESSAGE_CREATE", this.onDispatch);
     FluxDispatcher.unsubscribe("MESSAGE_UPDATE", this.onDispatch);
-    this.command.unload();
   }
 };

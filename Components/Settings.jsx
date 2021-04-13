@@ -15,7 +15,7 @@
  * along with WordNotifications.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-const { SliderInput, TextInput, Category, SwitchItem } = require("powercord/components/settings");
+const { SliderInput, TextInput, Category, SwitchItem, RadioGroup } = require("powercord/components/settings");
 const { React, getModule } = require("powercord/webpack");
 const { TOAST_TIMEOUT, HEADER_FORMAT, BODY_FORMAT } = require("../constants");
 const Trigger = require("./Trigger");
@@ -86,6 +86,25 @@ module.exports = ({ getSetting, updateSetting }) => {
 
         <Trigger pos={-1} value="" addTrigger={addTrigger} triggers={triggers} />
       </Category>
+
+      <RadioGroup
+        onChange={e => updateSetting("notificationType", e.value)}
+        value={getSetting("notificationType", "toast")}
+        options={[
+          {
+            name: "Toasts",
+            desc: "Notifications are sent via Powercord Toasts",
+            value: "toasts"
+          },
+          {
+            name: "System Notifications",
+            desc: "Notifications are sent via System Notifications",
+            value: "notifications"
+          }
+        ]}
+      >
+        Notification type
+      </RadioGroup>
 
       <Category
         name="Toast Format"

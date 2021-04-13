@@ -23,6 +23,7 @@ const { getChannel } = getModule(["getChannel"], false);
 const { getGuild } = getModule(["getGuild"], false);
 const { getCurrentUser } = getModule(["getCurrentUser"], false);
 const { getRelationships } = getModule(["getRelationships"], false);
+const { showNotification } = getModule(["showNotification"], false);
 const muteStore = getModule(["isChannelMuted"], false);
 
 module.exports = class Handler {
@@ -34,6 +35,10 @@ module.exports = class Handler {
 
   get regex() {
     return new RegExp(`(^|[^A-Z0-9]+)${this.triggers.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")}([^A-Z0-9]+|$)`, "gi");
+  }
+
+  get notificationType() {
+    return this.settings.get("notificationType", "toasts");
   }
 
   get triggers() {
@@ -94,7 +99,7 @@ module.exports = class Handler {
     let matches = this.findTriggers(content);
     if (!matches.size) return;
 
-    // For some reason discord sometimes just doesn't include this
+    // For some reason guild messages sometimes just don't include the guild_id
     if (!guild_id) guild_id = getChannel(channel_id).guild_id;
 
     const isSelf = getCurrentUser().id === message.author.id;
@@ -131,22 +136,30 @@ module.exports = class Handler {
   }
 
   sendToast(triggers, msg) {
-    this.queueToast("ven-notifier", {
-      header: this.format(this.headerFormat, triggers, msg),
-      content: this.format(this.bodyFormat, triggers, msg),
-      image: this.getAvatarUrl(msg.author.id, msg.author.avatar),
-      type: "info",
-      timeout: this.toastTimeout * 1000,
-      buttons: [
-        {
-          text: "Jump",
-          color: "green",
-          size: "medium",
-          look: "outlined",
-          onClick: () => transitionTo(this.getMessageLink(msg.guild_id, msg.channel_id, msg.id))
-        }
-      ]
-    });
+    const image = this.getAvatarUrl(msg.author.id, msg.author.avatar);
+    const header = this.format(this.headerFormat, triggers, msg);
+    const content = this.format(this.bodyFormat, triggers, msg);
+    const onClick = () => transitionTo(this.getMessageLink(msg.guild_id, msg.channel_id, msg.id));
+    if (this.notificationType === "toasts") {
+      this.queueToast("ven-notifier", {
+        header,
+        content,
+        image,
+        type: "info",
+        timeout: this.toastTimeout * 1000,
+        buttons: [
+          {
+            text: "Jump",
+            color: "green",
+            size: "medium",
+            look: "outlined",
+            onClick
+          }
+        ]
+      });
+    } else {
+      showNotification(image, header, content, { onClick });
+    }
   }
 
   format(str, triggers, { mentions, mention_roles, content, guild, author: { username, discriminator, id: authorId }, guild_id, channel_id }) {
