@@ -15,8 +15,6 @@
  * along with WordNotifications.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-const { toOrdinal } = require("./util");
-
 const commands = {
   list: "List all triggers",
   add: "Add one or more triggers",

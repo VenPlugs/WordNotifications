@@ -1,9 +1,3 @@
-function toOrdinal(i) {
-  const ordinalSuffixes = ["th", "st", "nd", "rd", "th"];
-  const n = i % 100;
-  return i + (n < 21 ? (n < 4 ? ordinalSuffixes[n] : ordinalSuffixes[0]) : n % 10 > 4 ? ordinalSuffixes[0] : ordinalSuffixes[n % 10]);
-}
-
 function getAllIndexes(arr, val) {
   const indexes = [];
   for (let i = 0; i < arr.length; i++) {
@@ -34,6 +28,5 @@ module.exports = {
   range,
   uniqueSorted,
   getAvatarUrl,
-  getMessageLink,
-  toOrdinal
+  getMessageLink
 };
