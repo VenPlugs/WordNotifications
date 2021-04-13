@@ -1,17 +1,26 @@
 # Powercord Word Notifier
 
-## WIP! NOT YET DONE
-
 A powercord plugin that displays Toasts every time someone sends a message including configured keywords
 
 Toasts can be customised by using format strings with placeholders
 
+## Features
+
+- Get notified whenever people say any of your configured words
+- Manage trigger words via settings tab or command
+- Regex support
+- Notification history (is reset on restart, messages are removed from history on delete to preserve user privacy)
+- Choose between Powercord Toasts or Desktop Notifications
+- Fully customisable via format strings with placeholders
+- Optionally ignore muted servers or channels with option to whitelist friends
+- Option to ignore servers
+
 ## Screenshots
 
-![1](https://owo.whats-th.is/AV8CWHR.png)
+![Screenshot](https://i-dont.work-for-an.agency/2k7Uh5G.png)
 
-![2](https://vendy.is-very.moe/5ctMWHZ.png)
+![Screenshot](https://totally-not.a-sketchy.site/5v4fvmx.png)
 
-![3](https://ven.is-very.moe/7xVLcTC.png)
+![Screenshot](https://owo.is-very.moe/2Hf8xJu.png)
 
-![4](https://i.work-for-an.agency/4zniRqp.png)
+![Screenshot](https://uwu.whats-th.is/4LCSy1X.png)
