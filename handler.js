@@ -34,7 +34,12 @@ module.exports = class Handler {
   }
 
   get regex() {
-    return new RegExp(`(^|[^A-Z0-9]+)${this.triggers.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")}([^A-Z0-9]+|$)`, "gi");
+    const triggers = this.triggerType === "regex" ? this.triggers : this.triggers.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    return new RegExp(`(^|[^A-Z0-9]+)${triggers.join("|")}([^A-Z0-9]+|$)`, "gi");
+  }
+
+  get triggerType() {
+    return this.settings.get("triggerType", "plain");
   }
 
   get notificationType() {
@@ -179,7 +184,7 @@ module.exports = class Handler {
       get TRIGGER_CONTEXT() {
         const words = content.split(/ +/).map(x => x.toLowerCase());
         let result = [];
-        for (const trigger of triggers.keys()) {
+        for (const trigger of triggers.values()) {
           const idx = words.findIndex(w => w.includes(trigger));
           if (idx === -1) continue;
           const startIdx = Math.max(0, idx - 5);

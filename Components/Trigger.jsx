@@ -19,7 +19,7 @@ const { Button, Card } = require("powercord/components");
 const { TextInput } = require("powercord/components/settings");
 const { React } = require("powercord/webpack");
 
-module.exports = ({ removeTrigger, addTrigger, setTrigger, triggers, value: originalValue, pos }) => {
+module.exports = ({ removeTrigger, addTrigger, setTrigger, triggers, triggerType, value: originalValue, pos }) => {
   const [value, setValue] = React.useState(originalValue);
 
   function add() {
@@ -30,7 +30,14 @@ module.exports = ({ removeTrigger, addTrigger, setTrigger, triggers, value: orig
   }
 
   function isValid() {
-    return /^[A-Za-z0-9]*$/.test(value) && !existsAlready();
+    if (existsAlready()) return false;
+    if (triggerType === "plain") return true;
+    try {
+      if (new RegExp(`(^|[^A-Z0-9]+)${value}([^A-Z0-9]+|$)`, "gi").test("jisjkaskjkjsjkaskajksjajkoskjoasjkjkasjksjkaskjakjjks")) return false;
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   function existsAlready() {

@@ -101,14 +101,33 @@ module.exports = ({ getSetting, updateSetting }) => {
     return true;
   }
 
+  const triggerType = getSetting("triggerType", "plain");
   return (
     <div>
       <Category name="Triggers" description="Here you can manage your triggers" opened={triggersOpened} onChange={() => setTriggersOpened(!triggersOpened)}>
+        <RadioGroup
+          onChange={e => updateSetting("triggerType", e.value)}
+          value={triggerType}
+          options={[
+            {
+              name: "Normal",
+              desc: "Normal triggers",
+              value: "plain"
+            },
+            {
+              name: "Regex",
+              desc: "Full regex support. Only select this if you know what you're doing",
+              value: "regex"
+            }
+          ]}
+        >
+          Trigger type
+        </RadioGroup>
         {triggers.map((t, i) => (
-          <Trigger key={t} value={t} pos={i} setTrigger={setTrigger} removeTrigger={removeTrigger} triggers={triggers} />
+          <Trigger key={t} value={t} pos={i} setTrigger={setTrigger} removeTrigger={removeTrigger} triggers={triggers} triggerType={triggerType} />
         ))}
 
-        <Trigger pos={-1} value="" addTrigger={addTrigger} triggers={triggers} />
+        <Trigger pos={-1} value="" addTrigger={addTrigger} triggers={triggers} triggerType={triggerType} />
       </Category>
 
       <RadioGroup
@@ -121,8 +140,8 @@ module.exports = ({ getSetting, updateSetting }) => {
             value: "toasts"
           },
           {
-            name: "System Notifications",
-            desc: "Notifications are sent via System Notifications",
+            name: "Desktop Notifications",
+            desc: "Notifications are sent via Desktop Notifications",
             value: "notifications"
           }
         ]}
@@ -222,7 +241,7 @@ module.exports = ({ getSetting, updateSetting }) => {
         <TextInput value={guildSearch} placeholder="What are you looking for?" onChange={setGuildSearch}></TextInput>
 
         {getFlattenedGuilds()
-          .filter(g => g.name.toLowerCase().includes(guildSearch.toLowerCase()))
+          .filter(g => g.id === guildSearch || g.name.toLowerCase().includes(guildSearch.toLowerCase()))
           .map(g => (
             <SwitchItem key={g.id} value={getSetting("mutedGuilds", []).includes(g.id)} onChange={() => onGuildToggle(g)}>
               Mute messages from {g.name}

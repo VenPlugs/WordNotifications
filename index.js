@@ -37,6 +37,7 @@ module.exports = class WordNotifications extends Plugin {
     });
 
     // Default settings
+    this.settings.set("triggerType", this.settings.get("triggerType", "plain"));
     this.settings.set("notificationType", this.settings.get("notificationType", "toasts"));
     this.settings.set("triggers", this.settings.get("triggers", []));
     this.settings.set("toastTimeout", this.settings.get("toastTimeout", TOAST_TIMEOUT));
