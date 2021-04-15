@@ -75,9 +75,9 @@ module.exports = class Handler {
       if (!guild_id) guild_id = getChannel(channel_id).guild_id;
 
       const isSelf = getCurrentUser().id === message.author.id;
+      if (isSelf && this.settings.get("ignoreSelf", true)) return; 
 
-      if (!this.settings.get("whitelistFriends", true) || !(isSelf || Object.prototype.hasOwnProperty.call(getRelationships(), message.author.id))) {
-        if (isSelf && this.settings.get("ignoreSelf", true)) return;
+      if (!this.settings.get("whitelistFriends", true) || !Object.prototype.hasOwnProperty.call(getRelationships(), message.author.id)) {
         if (guild_id && this.settings.get("ignoreMuted", true) && (muteStore.isMuted(guild_id) || muteStore.isChannelMuted(guild_id, channel_id))) return;
         if (guild_id && this.settings.get("mutedGuilds", []).includes(guild_id)) return;
       }
