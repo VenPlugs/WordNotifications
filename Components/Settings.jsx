@@ -224,6 +224,10 @@ module.exports = ({ getSetting, updateSetting }) => {
           Ignore blocked users
         </SwitchItem>
 
+        <SwitchItem value={getSetting("ignoreMentions", true)} onChange={v => updateSetting("ignoreMentions", v)}>
+          Ignore messages that you would already get notified for (Mentions/DMs)
+        </SwitchItem>
+
         <SwitchItem value={getSetting("ignoreLurking", true)} onChange={v => updateSetting("ignoreLurking", v)}>
           Ignore currently selected channel
         </SwitchItem>

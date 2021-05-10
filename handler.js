@@ -53,10 +53,12 @@ module.exports = class Handler {
 
       let { id, content, edited_timestamp, guild_id, channel_id } = message;
 
-      if (this.settings.get("ignoreSelf", true) && getCurrentUser().id === message.author.id) return;
+      const ownId = getCurrentUser().id;
+      if (this.settings.get("ignoreSelf", true) && ownId === message.author.id) return;
       if (this.settings.get("ignoreBlocked", true) && isBlocked(message.author.id)) return;
       if (this.settings.get("ignoreLurking", true) && getChannelId(guild_id) === channel_id) return;
       if (this.settings.get("ignoreBots", true) && message.author.bot) return;
+      if (this.settings.get("ignoreMentions", true) && (!guild_id || guild_id === "@me" || message.mentions.some(m => m.id === ownId))) return;
 
       if (!this.settings.get("whitelistFriends", true) || !Object.prototype.hasOwnProperty.call(getRelationships(), message.author.id)) {
         if (guild_id && this.settings.get("ignoreMuted", true) && (muteStore.isMuted(guild_id) || muteStore.isChannelMuted(guild_id, channel_id))) return;
@@ -66,7 +68,7 @@ module.exports = class Handler {
       let matches = this.findTriggers(content);
       if (!matches.size) return;
 
-      console.log(getChannelId)
+      console.log(message);
       // For some reason guild messages sometimes just don't include the guild_id
       if (!guild_id) guild_id = getChannel(channel_id).guild_id;
 
