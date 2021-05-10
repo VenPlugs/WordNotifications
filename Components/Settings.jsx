@@ -58,6 +58,7 @@ module.exports = ({ getSetting, updateSetting }) => {
   const [formatOpened, setFormatOpened] = useState(false);
   const [triggersOpened, setTriggersOpened] = useState(false);
   const [guildSearch, setGuildSearch] = useState("");
+  const [toastTimeout, setToastTimeout] = useState(getSetting("toastTimeout", TOAST_TIMEOUT));
 
   useEffect(() => {
     updateSetting("triggers", triggers);
@@ -156,19 +157,18 @@ module.exports = ({ getSetting, updateSetting }) => {
         </RadioGroup>
 
         {getSetting("notificationType", "toasts") === "toasts" && (
-          <SliderInput
-            stickToMarkers
-            required
-            className="venTriggersToastTimeout"
-            minValue={1}
-            maxValue={10}
-            defaultValue={TOAST_TIMEOUT}
-            initialValue={getSetting("toastTimeout", TOAST_TIMEOUT)}
-            markers={[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 10]}
-            onValueChange={v => updateSetting("toastTimeout", v)}
+          <TextInput
+            value={toastTimeout.toString()}
+            onChange={setToastTimeout}
+            onBlur={() => {
+              const n = parseInt(toastTimeout, 10);
+              if (n && !isNaN(n)) updateSetting("toastTimeout", n);
+              else setToastTimeout(TOAST_TIMEOUT);
+            }}
+            style={isNaN(toastTimeout) ? { borderColor: "#e53935" } : {}}
           >
-            The toast timeout, in seconds
-          </SliderInput>
+            The toast timeout, in seconds. Set to -1 for permament toasts
+          </TextInput>
         )}
 
         <TextInput
@@ -240,13 +240,14 @@ module.exports = ({ getSetting, updateSetting }) => {
       >
         <TextInput value={guildSearch} placeholder="What are you looking for?" onChange={setGuildSearch}></TextInput>
 
-        {getFlattenedGuilds()
-          .filter(g => g.id === guildSearch || g.name.toLowerCase().includes(guildSearch.toLowerCase()))
-          .map(g => (
-            <SwitchItem key={g.id} value={getSetting("mutedGuilds", []).includes(g.id)} onChange={() => onGuildToggle(g)}>
-              Mute messages from {g.name}
-            </SwitchItem>
-          ))}
+        {hideServersOpened &&
+          getFlattenedGuilds()
+            .filter(g => g.id === guildSearch || g.name.toLowerCase().includes(guildSearch.toLowerCase()))
+            .map(g => (
+              <SwitchItem key={g.id} value={getSetting("mutedGuilds", []).includes(g.id)} onChange={() => onGuildToggle(g)}>
+                Mute messages from {g.name}
+              </SwitchItem>
+            ))}
       </Category>
     </div>
   );

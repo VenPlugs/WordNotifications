@@ -115,13 +115,14 @@ module.exports = class Handler {
     const header = this.format(this.settings.get("headerFormat", HEADER_FORMAT), triggers, msg);
     const content = this.format(this.settings.get("bodyFormat", BODY_FORMAT), triggers, msg);
     const onClick = () => transitionTo(getMessageLink(msg.guild_id, msg.channel_id, msg.id));
+    const timeout = this.settings.get("toastTimeout", TOAST_TIMEOUT);
     if (this.settings.get("notificationType", "toasts") === "toasts") {
-      this.queueToast("ven-notifier", {
+      this.queueToast("ven-notifier-" + Date.now().toString(16), {
         header,
         content,
         image,
         type: "info",
-        timeout: this.settings.get("toastTimeout", TOAST_TIMEOUT) * 1000,
+        timeout: timeout === -1 ? undefined : timeout * 1000,
         buttons: [
           {
             text: "Jump",
