@@ -162,10 +162,10 @@ module.exports = ({ getSetting, updateSetting }) => {
             onChange={setToastTimeout}
             onBlur={() => {
               const n = parseInt(toastTimeout, 10);
-              if (n && !isNaN(n)) updateSetting("toastTimeout", n);
+              if (!isNaN(n) && (n === -1 || n > 0)) updateSetting("toastTimeout", n);
               else setToastTimeout(TOAST_TIMEOUT);
             }}
-            style={isNaN(toastTimeout) ? { borderColor: "#e53935" } : {}}
+            style={isNaN(toastTimeout) || toastTimeout < -1 ? { borderColor: "#e53935" } : {}}
           >
             The toast timeout, in seconds. Set to -1 for permament toasts
           </TextInput>
