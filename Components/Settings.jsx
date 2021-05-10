@@ -215,6 +215,19 @@ module.exports = ({ getSetting, updateSetting }) => {
         <SwitchItem note="Whether own messages should be ignored" value={getSetting("ignoreSelf", true)} onChange={v => updateSetting("ignoreSelf", v)}>
           Ignore self. Highly recommended
         </SwitchItem>
+
+        <SwitchItem value={getSetting("ignoreBots", true)} onChange={v => updateSetting("ignoreBots", v)}>
+          Ignore bots. Highly recommended
+        </SwitchItem>
+
+        <SwitchItem note="Whether blocked users should be ignored" value={getSetting("ignoreBlocked", true)} onChange={v => updateSetting("ignoreBlocked", v)}>
+          Ignore blocked users
+        </SwitchItem>
+
+        <SwitchItem value={getSetting("ignoreLurking", true)} onChange={v => updateSetting("ignoreLurking", v)}>
+          Ignore currently selected channel
+        </SwitchItem>
+
         <SwitchItem
           note="Whether all muted servers and channels should be ignored"
           value={getSetting("ignoreMuted", true)}
@@ -224,7 +237,7 @@ module.exports = ({ getSetting, updateSetting }) => {
         </SwitchItem>
 
         <SwitchItem
-          note="Whether friends should always alert you regardless of your mutes"
+          note="Whether friends should always alert you regardless of your other overrides"
           value={getSetting("whitelistFriends", true)}
           onChange={v => updateSetting("whitelistFriends", v)}
         >

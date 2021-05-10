@@ -21,10 +21,12 @@ const { getAvatarUrl, getAllIndexes, getMessageLink, range, uniqueSorted } = req
 
 const { transitionTo } = getModule(["transitionTo"], false);
 const { getChannel } = getModule(["getChannel"], false);
+const { getChannelId } = getModule(["getChannelId", "getLastSelectedChannelId"], false);
 const { getGuild } = getModule(["getGuild"], false);
 const { getCurrentUser } = getModule(["getCurrentUser"], false);
 const { getRelationships } = getModule(["getRelationships"], false);
 const { showNotification } = getModule(["showNotification"], false);
+const { isBlocked } = getModule(["getRelationships"], false);
 const muteStore = getModule(["isChannelMuted"], false);
 
 module.exports = class Handler {
@@ -32,7 +34,6 @@ module.exports = class Handler {
     this.cache = new Map();
     this.error = cmd.error.bind(cmd);
     this.settings = cmd.settings;
-    this.deleteToast = this.deleteToast.bind(this);
   }
 
   get regex() {
@@ -44,43 +45,30 @@ module.exports = class Handler {
     return this.settings.get("triggers", []);
   }
 
-  queueToast(id, data) {
-    if (typeof this.toast === "undefined") {
-      this.toast = true;
-      powercord.api.notices.sendToast(id, { ...data, callback: this.deleteToast });
-    } else {
-      setTimeout(() => this.queueToast(id, data), 500);
-    }
-  }
-
-  deleteToast() {
-    // Wait for cooldown https://github.com/powercord-org/powercord/blob/727a66a1fde5b2405285781faba257caa5bf7b2d/src/Powercord/apis/notices.js#L104
-    setTimeout(() => delete this.toast, 600);
-  }
-
-  onDispatch(event) {
+  onDispatch({ message }) {
     try {
       if (!this.triggers.length) return;
-      if (!event || !(event.type === "MESSAGE_CREATE" || event.type === "MESSAGE_UPDATE")) return;
 
-      const { message } = event;
-      if (!message || !message.author || message.author.bot || !message.content || message.state === "SENDING") return;
+      if (!message || !message.author || !message.content || message.state === "SENDING") return;
 
       let { id, content, edited_timestamp, guild_id, channel_id } = message;
 
-      let matches = this.findTriggers(content);
-      if (!matches.size) return;
-
-      // For some reason guild messages sometimes just don't include the guild_id
-      if (!guild_id) guild_id = getChannel(channel_id).guild_id;
-
-      const isSelf = getCurrentUser().id === message.author.id;
-      if (isSelf && this.settings.get("ignoreSelf", true)) return; 
+      if (this.settings.get("ignoreSelf", true) && getCurrentUser().id === message.author.id) return;
+      if (this.settings.get("ignoreBlocked", true) && isBlocked(message.author.id)) return;
+      if (this.settings.get("ignoreLurking", true) && getChannelId(guild_id) === channel_id) return;
+      if (this.settings.get("ignoreBots", true) && message.author.bot) return;
 
       if (!this.settings.get("whitelistFriends", true) || !Object.prototype.hasOwnProperty.call(getRelationships(), message.author.id)) {
         if (guild_id && this.settings.get("ignoreMuted", true) && (muteStore.isMuted(guild_id) || muteStore.isChannelMuted(guild_id, channel_id))) return;
         if (guild_id && this.settings.get("mutedGuilds", []).includes(guild_id)) return;
       }
+
+      let matches = this.findTriggers(content);
+      if (!matches.size) return;
+
+      console.log(getChannelId)
+      // For some reason guild messages sometimes just don't include the guild_id
+      if (!guild_id) guild_id = getChannel(channel_id).guild_id;
 
       if (edited_timestamp) {
         const cached = this.cache.get(id);
@@ -117,7 +105,7 @@ module.exports = class Handler {
     const onClick = () => transitionTo(getMessageLink(msg.guild_id, msg.channel_id, msg.id));
     const timeout = this.settings.get("toastTimeout", TOAST_TIMEOUT);
     if (this.settings.get("notificationType", "toasts") === "toasts") {
-      this.queueToast("ven-notifier-" + Date.now().toString(16), {
+      powercord.api.notices.sendToast("ven-notifier-" + Date.now().toString(16), {
         header,
         content,
         image,
